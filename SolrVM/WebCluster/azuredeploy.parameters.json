@@ -3,16 +3,16 @@
   "contentVersion": "1.0.0.0",
   "parameters": {
     "envPrefixName": {
-      "value": "slr9" 
+      "value": "solr" 
     },
     "environmentType": {
-      "value": "test"  
+      "value": "shared"  
     },
     "username": {
-      "value": "geekhive"
+      "value": "RDPUSERNAME"
     },
     "password": {
-      "value": "Password1!"
+      "value": "RDPPASSWORD"
     },
 	"solrVersion": {
       "value": "6.6.3"
