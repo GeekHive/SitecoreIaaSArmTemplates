@@ -1,0 +1,387 @@
+﻿{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+  "parameters": {
+    "envPrefixName": {
+      "type": "string",
+      "metadata": {
+        "description": "Prefix for the environment (2-5 characters)"
+      },
+      "defaultValue": "cust1",
+      "minLength": 2,
+      "maxLength": 5
+    },
+    "environmentType": {
+      "type": "string",
+      "metadata": {
+        "description": "Web Name (2-5 char)"
+      },
+      "defaultValue": "dev",
+      "minLength": 2,
+      "maxLength": 5
+    },
+    "username": {
+      "type": "string",
+      "metadata": {
+        "description": "SQL IaaS VM local administrator username"
+      }
+    },
+    "password": {
+      "type": "securestring",
+      "metadata": {
+        "description": "SQL IaaS VM local administrator password"
+      }
+    },
+    "_artifactsLocation": {
+      "type": "string",
+      "metadata": {
+        "description": "Auto-generated container in staging storage account to receive post-build staging folder upload"
+      }
+    },
+    "_artifactsLocationSasToken": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Auto-generated token to access _artifactsLocation"
+      }
+    },
+	"solrVersion": {
+      "type": "string",
+      "metadata": {
+        "description": "Solr version to be installed, e.g. 6.6.3"
+      }
+    },
+	"nssmVersion": {
+      "type": "string",
+      "metadata": {
+        "description": "Non-sucking service manager to install"
+      },
+	  "defaultValue": "2.24"
+    },
+	"solrSslPassword": {
+      "type": "string",
+      "metadata": {
+        "description": "Password for Solr SSL Certificate"
+      },
+	  "defaultValue": "secret"
+    },
+	"solrPort": {
+      "type": "string",
+      "metadata": {
+        "description": "Port used for Solr communication"
+      },
+	  "defaultValue": "8983"
+    },
+    "webSrvVMSize": {
+      "type": "string",
+      "allowedValues": [
+        "Standard_DS1",
+        "Standard_DS2",
+        "Standard_DS3",
+        "Standard_DS4",
+        "Standard_DS11",
+        "Standard_DS12",
+        "Standard_DS13",
+        "Standard_DS14",
+        "Standard_DS1_v2",
+        "Standard_DS2_v2",
+        "Standard_DS3_v2",
+        "Standard_DS4_v2",
+        "Standard_DS11_v2",
+        "Standard_DS12_v2",
+        "Standard_DS13_v2",
+        "Standard_DS14_v2"
+      ],
+      "metadata": {
+        "description": "The size of the Web Server VMs Created"
+      },
+      "defaultValue": "Standard_DS2_v2"
+    },
+    "storageAccountType": {
+      "type": "string",
+      "allowedValues": [
+        "Standard_LRS",
+        "Standard_GRS",
+        "Standard_RAGRS",
+        "Premium_LRS"
+      ],
+      "metadata": {
+        "description": "The type of the Storage Account created"
+      },
+      "defaultValue": "Standard_LRS"
+    },
+	"location": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure resource location"
+      },
+      "defaultValue": "eastus2"
+    }
+  },
+  "variables": {
+    "apiVersion": "2015-06-15",
+    "storageName": "[concat(parameters('envPrefixName'), 'stg', uniqueString(resourceGroup().id))]",
+    "vhdContainer": "vhds",
+    "virtualNetworkName": "[concat(parameters('envPrefixName'), 'Vnet')]",
+    "addressPrefix": "10.0.0.0/16",
+    "feSubnetPrefix": "10.0.0.0/24",
+    "feNSGName": "[concat(parameters('envPrefixName'), 'feNsg')]",
+    "vnetId": "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]",
+    "webSrvName": "[concat(parameters('envPrefixName'), parameters('environmentType'))]",
+    "webSrvVMSize": "[parameters('webSrvVMSize')]",
+    "webSrvOSDiks": "[concat(parameters('envPrefixName'), 'WebSrvOS')]",
+    "webSrvNicName": "[concat(variables('webSrvName'), 'Nic')]",
+    "webSrvSubnetRef": "[concat(variables('vnetId'), '/subnets/', 'FESubnetName')]",
+    "webSrvPublicIP": "[concat(variables('websrvName'), 'pip')]",
+    "webSrvAvailabilitySetName": "[concat(variables('webSrvName'), 'AS')]",
+    "webSrv_PIP_Id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('webSrvPublicIP'))]",
+    "frontEndIPConfigID": "[concat(variables('webSrvName'),'/frontendIPConfigurations/LoadBalancerFrontEnd')]",
+    "srvPoolID": "[concat(variables('webSrvName'),'/backendAddressPools/BackendPool1')]",
+    "srvProbeID": "[concat(variables('webSrvName'),'/probes/tcpProbe')]",
+    "vmExtensionName": "dscExtension",
+    "dscConfigurationScript": "WebServerConfig.ps1"
+  },
+  "resources": [
+    {
+      "apiVersion": "[variables('apiVersion')]",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "name": "[variables('feNSGName')]",
+      "location": "[resourceGroup().location]",
+      "tags": {
+        "displayName": "FrontEndNSG"
+      },
+      "properties": {
+        "securityRules": [
+          {
+            "name": "rdp_rule",
+            "properties": {
+              "description": "Allow RDP",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "3389",
+              "sourceAddressPrefix": "Internet",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 100,
+              "direction": "Inbound"
+            }
+          },
+		  {
+            "name": "solr_rule",
+            "properties": {
+              "description": "Allow Solr",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "8983",
+              "sourceAddressPrefix": "Internet",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 103,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "WinRM",
+            "properties": {
+              "description": "Allow WinRM",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "5986",
+              "sourceAddressPrefix": "Internet",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 102,
+              "direction": "Inbound"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "[variables('apiVersion')]",
+      "type": "Microsoft.Network/virtualNetworks",
+      "name": "[variables('virtualNetworkName')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkSecurityGroups/', variables('feNSGName'))]"
+      ],
+      "tags": {
+        "displayName": "VirtualNetwork"
+      },
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[variables('addressPrefix')]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "FESubnetName",
+            "properties": {
+              "addressPrefix": "[variables('feSubnetPrefix')]",
+              "networkSecurityGroup": {
+                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('feNSGName'))]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "[variables('storageName')]",
+      "type": "Microsoft.Storage/storageAccounts",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "[variables('apiVersion')]",
+      "dependsOn": [],
+      "tags": {
+        "displayName": "StorageForEnv"
+      },
+      "properties": {
+        "accountType": "[parameters('storageAccountType')]"
+      }
+    },
+    {
+      "type": "Microsoft.Compute/availabilitySets",
+      "name": "[variables('webSrvAvailabilitySetName')]",
+      "apiVersion": "[variables('apiVersion')]",
+      "location": "[resourceGroup().location]",
+      "tags": {
+        "displayName": "WebSrvAvailabilitySet"
+      },
+      "properties": {}
+    },
+    {
+      "name": "[variables('webSrvPublicIP')]",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "[variables('apiVersion')]",
+      "tags": {
+        "displayName": "WebSrvPIP"
+      },
+      "properties": {
+        "publicIPAllocationMethod": "Dynamic",
+        "idleTimeoutInMinutes": 4,
+        "dnsSettings": {
+          "domainNameLabel": "[variables('webSrvName')]"
+        }
+      }
+    },
+    {
+      "name": "[concat(variables('webSrvNicName'))]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "[variables('apiVersion')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
+        "[concat('Microsoft.Network/publicIPAddresses/', variables('webSrvPublicIP'))]"
+      ],
+      "tags": {
+        "displayName": "WebSrvNic"
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIpAddress": {
+                "id": "[variables('websrv_PIP_Id')]"
+              },
+              "subnet": {
+                "id": "[variables('webSrvSubnetRef')]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "[variables('webSrvName')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "[variables('apiVersion')]",
+      "dependsOn": [
+        "[concat('Microsoft.Storage/storageAccounts/', variables('storageName'))]",
+        "[concat('Microsoft.Network/networkInterfaces/', variables('webSrvNicName'))]",
+        "[concat('Microsoft.Compute/availabilitySets/', variables('webSrvAvailabilitySetName'))]"
+      ],
+      "tags": {
+        "displayName": "WebSrv"
+      },
+      "properties": {
+        "availabilitySet": {
+          "id": "[resourceId('Microsoft.Compute/availabilitySets',variables('webSrvAvailabilitySetName'))]"
+        },
+        "hardwareProfile": {
+          "vmSize": "[variables('webSrvVMSize')]"
+        },
+        "osProfile": {
+          "computerName": "[concat(variables('webSrvName'))]",
+          "adminUsername": "[parameters('username')]",
+          "adminPassword": "[parameters('password')]"
+        },
+        "storageProfile": {
+		  "imageReference": {
+            "publisher": "MicrosoftWindowsServer",
+            "offer": "WindowsServer",
+            "sku": "2016-Datacenter",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "WebSvrOSDisk",
+            "vhd": {
+              "uri": "[concat('http://', variables('storageName'), '.blob.core.windows.net/', variables('vhdContainer'), '/', variables('webSrvOSDiks'), '.vhd')]"
+            },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('webSrvNicName')))]"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(variables('webSrvName'),'/', variables('vmExtensionName'))]",
+      "apiVersion": "[variables('apiVersion')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/', variables('webSrvName'))]"
+      ],
+      "tags": {
+        "displayName": "VM Extensions"
+      },
+      "properties": {
+        "publisher": "Microsoft.Powershell",
+        "type": "DSC",
+        "typeHandlerVersion": "2.19",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "wmfVersion": "latest",
+          "configuration": {
+            "url": "[concat(parameters('_artifactsLocation'), '/DSC/', replace(variables('dscConfigurationScript'), '.ps1', '.zip'))]",
+            "script": "[variables('dscConfigurationScript')]",
+            "function": "WebServerConfig"
+          },
+          "configurationArguments": {
+			"solrVersion" : "[parameters('solrVersion')]",
+			"nssmVersion" : "[parameters('nssmVersion')]",
+			"solrSslPassword" : "[parameters('solrSslPassword')]",
+			"solrPort" : "[parameters('solrPort')]",
+			"dns" : "[concat(parameters('envPrefixName'), parameters('environmentType'), '.', parameters('location'), '.', 'cloudapp.azure.com')]",
+			"artifactsLocation": "[concat(parameters('_artifactsLocation'), '/DSC/')]"
+          },
+          "privacy": {
+            "dataCollection": "enable"
+          }
+        },
+        "protectedSettings": {
+        }
+      }
+    }
+  ]
+}

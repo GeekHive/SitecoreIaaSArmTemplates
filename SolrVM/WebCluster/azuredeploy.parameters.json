@@ -1,0 +1,24 @@
+﻿{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "envPrefixName": {
+      "value": "slr9" 
+    },
+    "environmentType": {
+      "value": "test"  
+    },
+    "username": {
+      "value": "geekhive"
+    },
+    "password": {
+      "value": "Password1!"
+    },
+	"solrVersion": {
+      "value": "6.6.3"
+    },
+	"location": {
+      "value": "eastus2"
+    }
+  }
+}
