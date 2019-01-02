@@ -1,0 +1,70 @@
+﻿{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"name": {
+			"type": "string"
+		},
+		"resourceGroupLocation": {
+			"type": "string"
+		}
+	},
+	"variables": {},
+	"resources": [
+		{
+			"apiVersion": "2015-06-15",
+			"type": "Microsoft.Network/networkSecurityGroups",
+			"name": "[parameters('name')]",
+			"location": "[parameters('resourceGroupLocation')]",
+			"tags": {
+				"displayName": "BackEndNSG"
+			},
+			"properties": {
+				"securityRules": [
+					{
+						"name": "Allow_FE",
+						"properties": {
+							"description": "Allow FE Subnet",
+							"protocol": "Tcp",
+							"sourcePortRange": "*",
+							"destinationPortRange": "1433",
+							"sourceAddressPrefix": "10.0.0.0/24",
+							"destinationAddressPrefix": "*",
+							"access": "Allow",
+							"priority": 100,
+							"direction": "Inbound"
+						}
+					},
+					{
+						"name": "rdp_rule",
+						"properties": {
+							"description": "Allow RDP",
+							"protocol": "Tcp",
+							"sourcePortRange": "*",
+							"destinationPortRange": "3389",
+							"sourceAddressPrefix": "Internet",
+							"destinationAddressPrefix": "*",
+							"access": "Allow",
+							"priority": 110,
+							"direction": "Inbound"
+						}
+					},
+					{
+						"name": "Block_FE",
+						"properties": {
+							"description": "Block App Subnet",
+							"protocol": "*",
+							"sourcePortRange": "*",
+							"destinationPortRange": "*",
+							"sourceAddressPrefix": "10.0.0.0/24",
+							"destinationAddressPrefix": "*",
+							"access": "Deny",
+							"priority": 121,
+							"direction": "Inbound"
+						}
+					}
+				]
+			}
+		}
+	]
+}

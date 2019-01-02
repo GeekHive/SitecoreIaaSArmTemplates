@@ -1,0 +1,100 @@
+﻿{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"name": {
+			"type": "string"
+		},
+		"resourceGroupLocation": {
+			"type": "string"
+		},
+		"PIP_Id": {
+			"type": "string",
+			"defaultValue": ""
+		},
+		"SubnetRef": {
+			"type": "string"
+		},
+		"isLoadBalancer": {
+			"type": "string",
+			"defaultValue": "No"
+		},
+		"webSrvNumbOfInstances": {
+			"type": "int",
+			"defaultValue": 1
+		},
+		"webLbId": {
+			"type": "string",
+			"defaultValue": ""
+		},
+		"displayName": {
+			"type": "string"
+		}
+	},
+	"variables": {},
+	"resources": [
+		{
+			"condition": "[not(equals(parameters('isLoadBalancer'), 'Yes'))]",
+			"name": "[parameters('name')]",
+			"type": "Microsoft.Network/networkInterfaces",
+			"location": "[parameters('resourceGroupLocation')]",
+			"apiVersion": "2015-06-15",
+			"tags": {
+				"displayName": "[parameters('displayName')]"
+			},
+			"properties": {
+				"ipConfigurations": [
+					{
+						"name": "ipconfig1",
+						"properties": {
+							"privateIPAllocationMethod": "Dynamic",
+							"publicIpAddress": {
+								"id": "[parameters('PIP_Id')]"
+							},
+							"subnet": {
+								"id": "[parameters('SubnetRef')]"
+							}
+						}
+					}
+				]
+			}
+		},
+		{
+			"condition": "[equals(parameters('isLoadBalancer'), 'Yes')]",
+			"name": "[concat(parameters('name'), copyindex())]",
+			"type": "Microsoft.Network/networkInterfaces",
+			"location": "[parameters('resourceGroupLocation')]",
+			"apiVersion": "2015-06-15",
+			"copy": {
+				"name": "nicLoop",
+				"count": "[parameters('webSrvNumbOfInstances')]"
+			},
+			"tags": {
+				"displayName": "[parameters('displayName')]"
+			},
+			"properties": {
+				"ipConfigurations": [
+					{
+						"name": "ipconfig1",
+						"properties": {
+							"privateIPAllocationMethod": "Dynamic",
+							"subnet": {
+								"id": "[parameters('SubnetRef')]"
+							},
+							"loadBalancerBackendAddressPools": [
+								{
+									"id": "[concat(parameters('webLbId'), '/backendAddressPools/BackendPool1')]"
+								}
+							],
+							"loadBalancerInboundNatRules": [
+								{
+									"id": "[concat(parameters('webLbId'),'/inboundNatRules/RDP-VM', copyindex())]"
+								}
+							]
+						}
+					}
+				]
+			}
+		}
+	]
+}

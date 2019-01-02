@@ -1,0 +1,53 @@
+﻿{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"name": {
+			"type": "string"
+		},
+		"resourceGroupLocation": {
+			"type": "string"
+		},
+		"srvName": {
+			"type": "string",
+			"defaultValue": "False"
+		},
+		"displayName": {
+			"type": "string"
+		}
+	},
+	"variables": {},
+	"resources": [
+		{
+			"condition": "[not(equals(parameters('srvName'), 'False'))]",
+			"name": "[parameters('name')]",
+			"type": "Microsoft.Network/publicIPAddresses",
+			"apiVersion": "2015-06-15",
+			"location": "[parameters('resourceGroupLocation')]",
+			"tags": {
+				"displayName": "[parameters('displayName')]"
+			},
+			"properties": {
+				"publicIPAllocationMethod": "Static",
+				"idleTimeoutInMinutes": 4,
+				"dnsSettings": {
+					"domainNameLabel": "[parameters('srvName')]"
+				}
+			}
+		},
+		{
+			"condition": "[equals(parameters('srvName'), 'False')]",
+			"name": "[concat(parameters('name'), 'db')]",
+			"type": "Microsoft.Network/publicIPAddresses",
+			"apiVersion": "2015-06-15",
+			"location": "[parameters('resourceGroupLocation')]",
+			"tags": {
+				"displayName": "[parameters('displayName')]"
+			},
+			"properties": {
+				"publicIPAllocationMethod": "Static",
+				"idleTimeoutInMinutes": 4
+			}
+		}
+	]
+}

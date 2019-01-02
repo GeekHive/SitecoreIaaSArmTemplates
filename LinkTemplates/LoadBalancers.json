@@ -1,0 +1,111 @@
+﻿{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"name": {
+			"type": "string"
+		},
+		"resourceGroupLocation": {
+			"type": "string"
+		},
+		"webLblb_PIP_Id": {
+			"type": "string"
+		},
+		"frontEndIPConfigID": {
+			"type": "string"
+		},
+		"lbPoolID": {
+			"type": "string"
+		},
+		"lbProbeID": {
+			"type": "string"
+		}
+	},
+	"variables": {},
+	"resources": [
+		{
+			"apiVersion": "2015-06-15",
+			"name": "[parameters('name')]",
+			"type": "Microsoft.Network/loadBalancers",
+			"location": "[parameters('resourceGroupLocation')]",
+			"tags": {
+				"displayName": "Web LB"
+			},
+			"properties": {
+				"frontendIPConfigurations": [
+					{
+						"name": "LoadBalancerFrontEnd",
+						"properties": {
+							"publicIPAddress": {
+								"id": "[parameters('webLblb_PIP_Id')]"
+							}
+						}
+					}
+				],
+				"backendAddressPools": [
+					{
+						"name": "BackendPool1"
+					}
+				],
+				"inboundNatRules": [
+					{
+						"name": "RDP-VM0",
+						"properties": {
+							"frontendIPConfiguration": {
+								"id": "[parameters('frontEndIPConfigID')]"
+							},
+							"protocol": "Tcp",
+							"frontendPort": 50001,
+							"backendPort": 3389,
+							"enableFloatingIP": false
+						}
+					},
+					{
+						"name": "RDP-VM1",
+						"properties": {
+							"frontendIPConfiguration": {
+								"id": "[parameters('frontEndIPConfigID')]"
+							},
+							"protocol": "Tcp",
+							"frontendPort": 50002,
+							"backendPort": 3389,
+							"enableFloatingIP": false
+						}
+					}
+				],
+				"loadBalancingRules": [
+					{
+						"name": "LBRule",
+						"properties": {
+							"frontendIPConfiguration": {
+								"id": "[parameters('frontEndIPConfigID')]"
+							},
+							"backendAddressPool": {
+								"id": "[parameters('lbPoolID')]"
+							},
+							"protocol": "Tcp",
+							"frontendPort": 80,
+							"backendPort": 80,
+							"enableFloatingIP": false,
+							"idleTimeoutInMinutes": 5,
+							"probe": {
+								"id": "[parameters('lbProbeID')]"
+							}
+						}
+					}
+				],
+				"probes": [
+					{
+						"name": "tcpProbe",
+						"properties": {
+							"protocol": "Tcp",
+							"port": 80,
+							"intervalInSeconds": 5,
+							"numberOfProbes": 2
+						}
+					}
+				]
+			}
+		}
+	]
+}

@@ -1,0 +1,51 @@
+﻿{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"name": {
+			"type": "string"
+		},
+		"addressPrefix": {
+			"type": "string"
+		},
+		"feSubnetPrefix": {
+			"type": "string"
+		},
+		"resourceGroupLocation": {
+			"type": "string"
+		},
+		"networkSecurityGroupName": {
+			"type": "string"
+		}
+	},
+	"variables": {},
+	"resources": [
+		{
+			"apiVersion": "2015-06-15",
+			"type": "Microsoft.Network/virtualNetworks",
+			"name": "[parameters('name')]",
+			"location": "[parameters('resourceGroupLocation')]",
+			"tags": {
+				"displayName": "VirtualNetwork"
+			},
+			"properties": {
+				"addressSpace": {
+					"addressPrefixes": [
+						"[parameters('addressPrefix')]"
+					]
+				},
+				"subnets": [
+					{
+						"name": "FESubnetName",
+						"properties": {
+							"addressPrefix": "[parameters('feSubnetPrefix')]",
+							"networkSecurityGroup": {
+								"id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroupName'))]"
+							}
+						}
+					}
+				]
+			}
+		}
+	]
+}

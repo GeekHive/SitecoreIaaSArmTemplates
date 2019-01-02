@@ -1,0 +1,158 @@
+﻿{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"name": {
+			"type": "string"
+		},
+		"resourceGroupLocation": {
+			"type": "string"
+		},
+		"availabilitySetName": {
+			"type": "string"
+		},
+		"vMSize": {
+			"type": "string"
+		},
+		"srvName": {
+			"type": "string"
+		},
+		"username": {
+			"type": "string"
+		},
+		"password": {
+			"type": "string"
+		},
+		"imageReferencePublisher": {
+			"type": "string"
+		},
+		"imageReferenceOffer": {
+			"type": "string"
+		},
+		"imageReferenceSku": {
+			"type": "string"
+		},
+		"storageName": {
+			"type": "string"
+		},
+		"vhdContainer": {
+			"type": "string"
+		},
+		"oSDiskName": {
+			"type": "string"
+		},
+		"nicName": {
+			"type": "string"
+		},
+		"isLoadBalancer": {
+			"type": "string",
+			"defaultValue": "No"
+		},
+		"webSrvNumbOfInstances": {
+			"type": "int",
+			"defaultValue": 1
+		},
+		"displayName": {
+			"type": "string"
+		}
+	},
+	"variables": {},
+	"resources": [
+		{
+			"condition": "[not(equals(parameters('isLoadBalancer'), 'Yes'))]",
+			"name": "[parameters('name')]",
+			"type": "Microsoft.Compute/virtualMachines",
+			"location": "[parameters('resourceGroupLocation')]",
+			"apiVersion": "2015-06-15",
+			"tags": {
+				"displayName": "[parameters('displayName')]"
+			},
+			"properties": {
+				"availabilitySet": {
+					"id": "[resourceId('Microsoft.Compute/availabilitySets',parameters('availabilitySetName'))]"
+				},
+				"hardwareProfile": {
+					"vmSize": "[parameters('vMSize')]"
+				},
+				"osProfile": {
+					"computerName": "[parameters('srvName')]",
+					"adminUsername": "[parameters('username')]",
+					"adminPassword": "[parameters('password')]"
+				},
+				"storageProfile": {
+					"imageReference": {
+						"publisher": "[parameters('imageReferencePublisher')]",
+						"offer": "[parameters('imageReferenceOffer')]",
+						"sku": "[parameters('imageReferenceSku')]",
+						"version": "latest"
+					},
+					"osDisk": {
+						"name": "[parameters('oSDiskName')]",
+						"vhd": {
+							"uri": "[concat('http://', parameters('storageName'), '.blob.core.windows.net/', parameters('vhdContainer'), '/', parameters('oSDiskName'), '.vhd')]"
+						},
+						"caching": "ReadWrite",
+						"createOption": "FromImage"
+					}
+				},
+				"networkProfile": {
+					"networkInterfaces": [
+						{
+							"id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('nicName'))]"
+						}
+					]
+				}
+			}
+		},
+		{
+			"condition": "[equals(parameters('isLoadBalancer'), 'Yes')]",
+			"name": "[concat(parameters('name'), copyindex())]",
+			"type": "Microsoft.Compute/virtualMachines",
+			"location": "[parameters('resourceGroupLocation')]",
+			"apiVersion": "2015-06-15",
+			"copy": {
+				"name": "webSrvMachineLoop",
+				"count": "[parameters('webSrvNumbOfInstances')]"
+			},
+			"tags": {
+				"displayName": "[parameters('displayName')]"
+			},
+			"properties": {
+				"availabilitySet": {
+					"id": "[resourceId('Microsoft.Compute/availabilitySets',parameters('availabilitySetName'))]"
+				},
+				"hardwareProfile": {
+					"vmSize": "[parameters('vMSize')]"
+				},
+				"osProfile": {
+					"computerName": "[concat(parameters('srvName'),copyindex())]",
+					"adminUsername": "[parameters('username')]",
+					"adminPassword": "[parameters('password')]"
+				},
+				"storageProfile": {
+					"imageReference": {
+						"publisher": "[parameters('imageReferencePublisher')]",
+						"offer": "[parameters('imageReferenceOffer')]",
+						"sku": "[parameters('imageReferenceSku')]",
+						"version": "latest"
+					},
+					"osDisk": {
+						"name": "[parameters('oSDiskName')]",
+						"vhd": {
+							"uri": "[concat('http://', parameters('storageName'), '.blob.core.windows.net/', parameters('vhdContainer'), '/', parameters('oSDiskName'), copyindex(), '.vhd')]"
+						},
+						"caching": "ReadWrite",
+						"createOption": "FromImage"
+					}
+				},
+				"networkProfile": {
+					"networkInterfaces": [
+						{
+							"id": "[resourceId('Microsoft.Network/networkInterfaces', concat(parameters('nicName'), copyindex()))]"
+						}
+					]
+				}
+			}
+		}
+	]
+}

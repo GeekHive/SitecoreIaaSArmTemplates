@@ -190,18 +190,6 @@ Configuration WebServerConfig
 			DependsOn="[Script]GetSolr"
 		}
 		
-		# Script GetNssm{
-			# GetScript = { @{ Result = (Test-Path -Path "c:\nssm.zip"); } }
-			# SetScript = {
-				# $Uri = "https://nssm.cc/release/nssm-$using:nssmVersion.zip" 
-				# $OutFile = "c:\nssm.zip"
-				# [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-				# Invoke-WebRequest -Uri $Uri -OutFile $OutFile -UseBasicParsing
-				# Unblock-File -Path $OutFile
-			# }	
-			# TestScript = {Test-Path -Path "c:\nssm.zip"}
-		# }
-		
 		Script GetNssm {
 			GetScript = { @{Result = (Test-Path -Path "C:\nssm.zip");}};
 			SetScript = {

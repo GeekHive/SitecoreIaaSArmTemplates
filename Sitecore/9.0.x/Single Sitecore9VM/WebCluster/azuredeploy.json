@@ -1,0 +1,467 @@
+﻿{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "apiProfile": "2018-06-01-profile",
+  "parameters": {
+    "envPrefixName": {
+      "type": "string",
+      "metadata": {
+        "description": "Prefix for the environment (2-5 characters)"
+      },
+      "defaultValue": "cust1",
+      "minLength": 2,
+      "maxLength": 5
+    },
+    "environmentType": {
+      "type": "string",
+      "metadata": {
+        "description": "Web Name (2-5 char)"
+      },
+      "defaultValue": "dev",
+      "minLength": 2,
+      "maxLength": 5
+    },
+    "username": {
+      "type": "string",
+      "metadata": {
+        "description": "SQL IaaS VM local administrator username"
+      }
+    },
+    "password": {
+      "type": "securestring",
+      "metadata": {
+        "description": "SQL IaaS VM local administrator password"
+      }
+    },
+    "_artifactsLocation": {
+      "type": "string",
+      "metadata": {
+        "description": "Auto-generated container in staging storage account to receive post-build staging folder upload"
+      }
+    },
+    "sqlServerVersion": {
+      "type": "string",
+      "defaultValue": "SQL2016SP2-WS2016",
+      "metadata": {
+        "description": "SQL Version to install"
+      }
+    },
+    "webSrvVMSize": {
+      "type": "string",
+      "allowedValues": [
+        "Standard_DS1",
+        "Standard_DS2",
+        "Standard_DS3",
+        "Standard_DS4",
+        "Standard_DS11",
+        "Standard_DS12",
+        "Standard_DS13",
+        "Standard_DS14",
+        "Standard_DS1_v2",
+        "Standard_DS2_v2",
+        "Standard_DS3_v2",
+        "Standard_DS4_v2",
+        "Standard_DS11_v2",
+        "Standard_DS12_v2",
+        "Standard_DS13_v2",
+        "Standard_DS14_v2"
+      ],
+      "metadata": {
+        "description": "The size of the Web Server VMs Created"
+      },
+      "defaultValue": "Standard_DS2_v2"
+    },
+    "storageAccountType": {
+      "type": "string",
+      "allowedValues": [
+        "Standard_LRS",
+        "Standard_GRS",
+        "Standard_RAGRS",
+        "Premium_LRS"
+      ],
+      "metadata": {
+        "description": "The type of the Storage Account created"
+      },
+      "defaultValue": "Standard_LRS"
+    },
+    "licenseFile": {
+      "type": "string",
+      "metadata": {
+        "description": "Filename of sitecore license file"
+      },
+      "defaultValue": "license.xml"
+    },
+    "sitecoreWdpPackage": {
+      "type": "string",
+      "metadata": {
+        "description": "Filename of primary sitecore WDP zip file"
+      }
+    },
+    "serverResourcesFolder": {
+      "type": "string",
+      "metadata": {
+        "description": "Folder to use to hold deployed resources on server."
+      },
+      "defaultValue": "C:\\Temp"
+    },
+    "solrSSLPassword": {
+      "type": "string",
+      "metadata": {
+        "description": "Solr Certification password"
+      },
+      "defaultValue": "secret"
+    },
+    "solrSSLFileName": {
+      "type": "string",
+      "metadata": {
+        "description": "Full filename of Solr SSL provided"
+      }
+    },
+    "solrUrl": {
+      "type": "string",
+      "metadata": {
+        "description": "Solr URL, including /solr"
+      }
+    },
+    "sitecoreConfigurationFilesNameNoExtension": {
+      "type": "string",
+      "metadata": {
+        "description": "Configuration files zip without '.zip'"
+      }
+    },
+    "xConnectPackage": {
+      "type": "string",
+      "metadata": {
+        "description": "Full filename of xConnect wdp package, including .zip"
+      }
+    },
+    "sitecorePackage": {
+      "type": "string",
+      "metadata": {
+        "description": "Full filename of Sitecore site wdp package, including .zip"
+      }
+    },
+    "sqlAdminUser": {
+      "type": "string",
+      "metadata": {
+        "description": "Sitecore SQL Username"
+      }
+    },
+    "sqlAdminPassword": {
+      "type": "string",
+      "metadata": {
+        "description": "Sitecore SQL Password"
+      }
+    },
+    "solrMainConfigSetName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of Config set for main Sitecore indexes on Solr server"
+      },
+      "defaultValue": "sitecore_main"
+    },
+    "solrXdbConfigSetName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of Config set for xdb indexes on Solr server"
+      },
+      "defaultValue": "sitecore_xdb"
+    },
+    "sifVersion": {
+      "type": "string",
+      "allowedValues": [
+        "1.0.2",
+        "1.1.0",
+        "1.2.1",
+        "2.0.0"
+      ],
+      "metadata": {
+        "description": "Version of SIF to use, might be SC version dependent"
+      },
+	  "defaultValue": "1.2.1"
+    }
+  },
+  "variables": {
+    "storageName": "[concat(parameters('envPrefixName'), 'stg', uniqueString(resourceGroup().id))]",
+    "vhdContainer": "vhds",
+    "virtualNetworkName": "[concat(parameters('envPrefixName'), 'Vnet')]",
+    "addressPrefix": "10.0.0.0/16",
+    "feSubnetPrefix": "10.0.0.0/24",
+    "networkSecurityGroupName": "[concat(parameters('envPrefixName'), 'feNsg')]",
+    "vnetId": "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]",
+    "webSrvName": "[concat(parameters('envPrefixName'), parameters('environmentType'))]",
+    "webSrvVMSize": "[parameters('webSrvVMSize')]",
+    "webSrvOSDiks": "[concat(parameters('envPrefixName'), 'WebSrvOS')]",
+    "webSrvNicName": "[concat(variables('webSrvName'), 'Nic')]",
+    "webSrvSubnetRef": "[concat(variables('vnetId'), '/subnets/', 'FESubnetName')]",
+    "webSrvPublicIP": "[concat(variables('websrvName'), 'pip')]",
+    "webSrvAvailabilitySetName": "[concat(variables('webSrvName'), 'AS')]",
+    "webSrv_PIP_Id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('webSrvPublicIP'))]",
+    "vmExtensionName": "dscExtension",
+    "dscConfigurationScript": "WebServerConfig.ps1"
+  },
+  "resources": [
+    {
+      "name": "nsgLink",
+      "type": "Microsoft.Resources/deployments",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('_artifactsLocation'), '/AzureTemplates/FENetworkSecurityGroups.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "name": {
+            "value": "[variables('networkSecurityGroupName')]"
+          },
+          "resourceGroupLocation": {
+            "value": "[resourceGroup().location]"
+          }
+        }
+      }
+    },
+    {
+      "name": "vnetLink",
+      "type": "Microsoft.Resources/deployments",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('_artifactsLocation'), '/AzureTemplates/VirtualNetworks.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "name": {
+            "value": "[variables('virtualNetworkName')]"
+          },
+          "addressPrefix": {
+            "value": "[variables('addressPrefix')]"
+          },
+          "feSubnetPrefix": {
+            "value": "[variables('feSubnetPrefix')]"
+          },
+          "resourceGroupLocation": {
+            "value": "[resourceGroup().location]"
+          },
+          "networkSecurityGroupName": {
+            "value": "[variables('networkSecurityGroupName')]"
+          }
+        }
+      },
+      "dependsOn": [
+        "nsgLink"
+      ]
+    },
+    {
+      "name": "saLink",
+      "type": "Microsoft.Resources/deployments",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('_artifactsLocation'), '/AzureTemplates/StorageAccounts.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "name": {
+            "value": "[variables('storageName')]"
+          },
+          "resourceGroupLocation": {
+            "value": "[resourceGroup().location]"
+          },
+          "storageAccountType": {
+            "value": "[parameters('storageAccountType')]"
+          }
+        }
+      }
+    },
+    {
+      "name": "asLink",
+      "type": "Microsoft.Resources/deployments",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('_artifactsLocation'), '/AzureTemplates/AvailabilitySets.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "name": {
+            "value": "[variables('webSrvAvailabilitySetName')]"
+          },
+          "resourceGroupLocation": {
+            "value": "[resourceGroup().location]"
+          }
+        }
+      }
+    },
+    {
+      "name": "piaLink",
+      "type": "Microsoft.Resources/deployments",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('_artifactsLocation'), '/AzureTemplates/PublicIpAddresses.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "name": {
+            "value": "[variables('webSrvPublicIP')]"
+          },
+          "resourceGroupLocation": {
+            "value": "[resourceGroup().location]"
+          },
+          "srvName": {
+            "value": "[variables('webSrvName')]"
+          },
+          "displayName": {
+            "value": "SrvPIP"
+          }
+        }
+      }
+    },
+    {
+      "name": "niLink",
+      "type": "Microsoft.Resources/deployments",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('_artifactsLocation'), '/AzureTemplates/NetworkInterfaces.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "name": {
+            "value": "[variables('webSrvNicName')]"
+          },
+          "resourceGroupLocation": {
+            "value": "[resourceGroup().location]"
+          },
+          "PIP_Id": {
+            "value": "[variables('websrv_PIP_Id')]"
+          },
+          "SubnetRef": {
+            "value": "[variables('webSrvSubnetRef')]"
+          },
+          "displayName": {
+            "value": "SrvNic"
+          }
+        }
+      },
+      "dependsOn": [
+        "vnetLink",
+        "piaLink"
+      ]
+    },
+    {
+      "name": "vmLink",
+      "type": "Microsoft.Resources/deployments",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('_artifactsLocation'), '/AzureTemplates/VirtualMachines.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "name": {
+            "value": "[variables('webSrvName')]"
+          },
+          "resourceGroupLocation": {
+            "value": "[resourceGroup().location]"
+          },
+          "availabilitySetName": {
+            "value": "[variables('webSrvAvailabilitySetName')]"
+          },
+          "vMSize": {
+            "value": "[variables('webSrvVMSize')]"
+          },
+          "srvName": {
+            "value": "[variables('webSrvName')]"
+          },
+          "username": {
+            "value": "[parameters('username')]"
+          },
+          "password": {
+            "value": "[parameters('password')]"
+          },
+          "imageReferencePublisher": {
+            "value": "MicrosoftSQLServer"
+          },
+          "imageReferenceOffer": {
+            "value": "[parameters('sqlServerVersion')]"
+          },
+          "imageReferenceSku": {
+            "value": "Standard"
+          },
+          "storageName": {
+            "value": "[variables('storageName')]"
+          },
+          "vhdContainer": {
+            "value": "[variables('vhdContainer')]"
+          },
+          "oSDiskName": {
+            "value": "[variables('webSrvOSDiks')]"
+          },
+          "nicName": {
+            "value": "[variables('webSrvNicName')]"
+          },
+          "displayName": {
+            "value": "SrvVM"
+          }
+        }
+      },
+      "dependsOn": [
+        "saLink",
+        "niLink",
+        "asLink"
+      ]
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(variables('webSrvName'),'/', variables('vmExtensionName'))]",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-06-15",
+      "dependsOn": [
+        "vmLink"
+      ],
+      "tags": {
+        "displayName": "VM Extensions"
+      },
+      "properties": {
+        "publisher": "Microsoft.Powershell",
+        "type": "DSC",
+        "typeHandlerVersion": "2.19",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "wmfVersion": "latest",
+          "configuration": {
+            "url": "[concat(parameters('_artifactsLocation'), '/DSC/', replace(variables('dscConfigurationScript'), '.ps1', '.zip'))]",
+            "script": "[variables('dscConfigurationScript')]",
+            "function": "WebServerConfig"
+          },
+          "configurationArguments": {
+            "rdpUsername": "[parameters('username')]",
+            "artifactsLocation": "[concat(parameters('_artifactsLocation'), '/DSC/')]",
+            "resourcesPath": "[parameters('serverResourcesFolder')]",
+            "solrSSLPassword": "[parameters('solrSSLPassword')]",
+            "solrSSLFileName": "[parameters('solrSSLFileName')]",
+            "sitecoreWDPPackageNameNoExtension": "[parameters('sitecoreWdpPackage')]",
+            "sitecoreConfigurationFilesNameNoExtension": "[parameters('sitecoreConfigurationFilesNameNoExtension')]",
+            "sitePrefix": "[concat(parameters('envPrefixName'), '.', parameters('environmentType'))]",
+			"siteDns": "[concat(variables('webSrvName'), '.', resourceGroup().location, '.cloudapp.azure.com')]",
+            "xConnectPackage": "[parameters('xConnectPackage')]",
+            "sitecorePackage": "[parameters('sitecorePackage')]",
+            "sqlServer": "[variables('websrvName')]",
+            "sqlAdminUser": "[parameters('sqlAdminUser')]",
+            "sqlAdminPassword": "[parameters('sqlAdminPassword')]",
+            "solrUrl": "[parameters('solrUrl')]",
+            "licenseFile": "[parameters('licenseFile')]",
+            "solrMainConfigSet": "[parameters('solrMainConfigSetName')]",
+            "solrXdbConfigSet": "[parameters('solrXdbConfigSetName')]",
+            "sifVersion": "[parameters('sifVersion')]"
+          },
+          "privacy": {
+            "dataCollection": "enable"
+          }
+        },
+        "protectedSettings": {}
+      }
+    }
+  ]
+}
