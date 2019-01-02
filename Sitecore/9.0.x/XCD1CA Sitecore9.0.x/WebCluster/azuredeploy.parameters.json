@@ -1,0 +1,51 @@
+﻿{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "envPrefixName": {
+      "value": "tst3"
+    },
+    "environmentType": {
+      "value": "qa"
+    },
+    "username": {
+      "value": "RDPUSERNAME"
+    },
+    "password": {
+      "value": "RDPPASSWORD"
+    },
+    "licenseFile": {
+      "value": "license.xml"
+    },
+    "sitecoreXP0WdpPackage": {
+      "value": "Sitecore 9.0.2 rev. 180604 (WDP XP0 packages)"
+    },
+    "sitecoreCDWdpPackage": {
+      "value": "Sitecore 9.0.2 rev. 180604 (OnPrem)_cd.scwdp"
+    },
+    "solrSSLFileName": {
+      "value": "solr-ssl.keystore.pfx"
+    },
+    "solrUrl": {
+      "value": "https://SOLR.eastus2.cloudapp.azure.com:8983/solr"
+    },
+    "sitecoreConfigurationFilesNameNoExtensionXP0": {
+      "value": "XP0 Configuration files 9.0.2 rev. 180604"
+    },
+    "sitecoreXp1CDJson": {
+      "value": "sitecore-XP1-cd.json"
+    },
+    "xConnectPackage": {
+      "value": "Sitecore 9.0.2 rev. 180604 (OnPrem)_xp0xconnect.scwdp.zip"
+    },
+    "sitecoreSingleWdpPackage": {
+      "value": "Sitecore 9.0.2 rev. 180604 (OnPrem)_single.scwdp.zip"
+    },
+    "sqlAdminUser": {
+      "value": "sitecore"
+    },
+    "sqlAdminPassword": {
+      "value": "sitecore"
+    }
+  }
+}

@@ -1,0 +1,900 @@
+﻿{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "apiProfile": "2018-06-01-profile",
+  "parameters": {
+    "envPrefixName": {
+      "type": "string",
+      "metadata": {
+        "description": "Prefix for the environment (2-5 characters)"
+      },
+      "defaultValue": "cust1",
+      "minLength": 2,
+      "maxLength": 5
+    },
+    "environmentType": {
+      "type": "string",
+      "metadata": {
+        "description": "Web Name (2-5 char)"
+      },
+      "defaultValue": "dev",
+      "minLength": 2,
+      "maxLength": 4
+    },
+    "username": {
+      "type": "string",
+      "metadata": {
+        "description": "SQL IaaS VM local administrator username"
+      }
+    },
+    "password": {
+      "type": "securestring",
+      "metadata": {
+        "description": "SQL IaaS VM local administrator password"
+      }
+    },
+    "_artifactsLocation": {
+      "type": "string",
+      "metadata": {
+        "description": "Auto-generated container in staging storage account to receive post-build staging folder upload"
+      }
+    },
+    "webSrvVMSize": {
+      "type": "string",
+      "allowedValues": [
+        "Standard_DS1_v2",
+        "Standard_DS2_v2",
+        "Standard_DS3_v2",
+        "Standard_DS4_v2",
+        "Standard_DS11_v2",
+        "Standard_DS12_v2",
+        "Standard_DS13_v2",
+        "Standard_DS14_v2"
+      ],
+      "metadata": {
+        "description": "The size of the Web Server VMs Created"
+      },
+      "defaultValue": "Standard_DS2_v2"
+    },
+    "numberOfWebSrvs": {
+      "type": "int",
+      "metadata": {
+        "description": "Number of Web Servers"
+      },
+      "allowedValues": [
+        1,
+        2
+      ],
+      "defaultValue": 2
+    },
+    "sqlServerOffer": {
+      "type": "string",
+      "metadata": {
+        "description": "SQL Server image profile"
+      },
+      "defaultValue": "SQL2016SP2-WS2016"
+    },
+    "sqlVMSize": {
+      "type": "string",
+      "allowedValues": [
+        "Standard_DS1_v2",
+        "Standard_DS2_v2",
+        "Standard_DS3_v2",
+        "Standard_DS4_v2",
+        "Standard_DS11_v2",
+        "Standard_DS12_v2",
+        "Standard_DS13_v2",
+        "Standard_DS14_v2"
+      ],
+      "metadata": {
+        "description": "The size of the SQL VM Created"
+      },
+      "defaultValue": "Standard_DS2_v2"
+    },
+    "storageAccountType": {
+      "type": "string",
+      "allowedValues": [
+        "Standard_LRS",
+        "Standard_GRS",
+        "Standard_RAGRS",
+        "Premium_LRS"
+      ],
+      "metadata": {
+        "description": "The type of the Storage Account created"
+      },
+      "defaultValue": "Premium_LRS"
+    },
+    "licenseFile": {
+      "type": "string",
+      "metadata": {
+        "description": "Filename of sitecore license file"
+      }
+    },
+    "sitecoreXP0WdpPackage": {
+      "type": "string",
+      "metadata": {
+        "description": "Filename of XP0 sitecore WDP zip file, example: Sitecore 9.0.2 rev. 180604 (WDP XP0 packages)"
+      }
+    },
+    "sitecoreCDWdpPackage": {
+      "type": "string",
+      "metadata": {
+        "description": "Filename of XP1 sitecore CD WDP zip file, example: Sitecore 9.0.2 rev. 180604 (OnPrem)_cd.scwdp"
+      }
+    },
+    "solrSSLPassword": {
+      "type": "string",
+      "metadata": {
+        "description": "Solr Certification password"
+      },
+	  "defaultValue": "secret"
+    },
+    "solrSSLFileName": {
+      "type": "string",
+      "metadata": {
+        "description": "Full filename of Solr SSL provided"
+      }
+    },
+    "solrUrl": {
+      "type": "string",
+      "metadata": {
+        "description": "Solr URL, including /solr"
+      }
+    },
+    "xConnectPackage": {
+      "type": "string",
+      "metadata": {
+        "description": "Full filename of xConnect wdp package, including .zip"
+      }
+    },
+    "sitecoreSingleWdpPackage": {
+      "type": "string",
+      "metadata": {
+        "description": "Full filename of Sitecore site wdp package, including .zip"
+      }
+    },
+    "sqlAdminUser": {
+      "type": "string"
+    },
+    "sqlAdminPassword": {
+      "type": "string"
+    },
+    "sifVersion": {
+      "type": "string",
+	  "defaultValue": "1.2.1"
+    },
+    "sitecoreConfigurationFilesNameNoExtensionXP0": {
+      "type": "string"
+    },
+    "sitecoreXp1CDJson": {
+      "type": "string"
+    },
+    "serverResourcesFolder": {
+      "type": "string",
+      "metadata": {
+        "description": "Folder to use to hold deployed resources on server."
+      },
+      "defaultValue": "C:\\Temp"
+    },
+    "solrMainConfigSetName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of Config set for main Sitecore indexes on Solr server"
+      },
+      "defaultValue": "sitecore_main"
+    },
+    "solrXdbConfigSetName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of Config set for xdb indexes on Solr server"
+      },
+      "defaultValue": "sitecore_xdb"
+    }
+  },
+  "variables": {
+    "storageName": "[concat(parameters('envPrefixName'), 'stg', uniqueString(resourceGroup().id))]",
+    "vhdContainer": "vhds",
+    "virtualNetworkName": "[concat(parameters('envPrefixName'), 'Vnet')]",
+    "addressPrefix": "10.0.0.0/16",
+    "feSubnetPrefix": "10.0.0.0/24",
+    "dbSubnetPrefix": "10.0.2.0/24",
+    "feNSGName": "[concat(parameters('envPrefixName'), 'feNsg')]",
+    "dbNSGName": "[concat(parameters('envPrefixName'), 'dbNsg')]",
+    "sqlSrvDBName": "[concat(parameters('envPrefixName'), 'sql', parameters('environmentType'))]",
+    "sqlVmSize": "[parameters('sqlVMSize')]",
+    "sqlSrvDBOsDiskName": "[concat(parameters('envPrefixName'), 'DBSrvOS')]",
+    "vnetId": "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]",
+    "sqlSrvDBNicName": "[concat(variables('sqlSrvDBName'), 'Nic')]",
+    "sqlSvrDBSubnetRef": "[concat(variables('vnetId'), '/subnets/', 'DBSubnet')]",
+    "sqlPublicIP": "[concat(parameters('envPrefixName'), 'SqlPip')]",
+    "sqlPublicIPRef": "[resourceId('Microsoft.Network/publicIPAddresses', variables('sqlPublicIP'))]",
+    "sqlImagePublisher": "MicrosoftSQLServer",
+    "sqlImageSku": "Standard",
+    "caSrvName": "[concat(parameters('envPrefixName'), 'ca', parameters('environmentType'))]",
+    "caSrvOSDiks": "[concat(parameters('envPrefixName'), 'caOS')]",
+    "caSrvNicName": "[concat(variables('caSrvName'), 'Nic')]",
+    "caSrvPublicIP": "[concat(variables('casrvName'), 'pip')]",
+    "caSrv_PIP_Id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('caSrvPublicIP'))]",
+    "cdSrvName": "[concat(parameters('envPrefixName'), parameters('environmentType'))]",
+    "webSrvVMSize": "[parameters('webSrvVMSize')]",
+    "cdSrvOSDisk": "[concat(parameters('envPrefixName'), 'cdOS')]",
+    "cdSrvNicName": "[concat(variables('cdSrvName'), 'Nic')]",
+    "webSrvSubnetRef": "[concat(variables('vnetId'), '/subnets/', 'FESubnet')]",
+    "webSrvPublicIP": "[concat(parameters('envPrefixName'), 'cdpip')]",
+    "webSrvAvailabilitySetName": "[concat(parameters('envPrefixName'), 'webSrvAS')]",
+    "webSrvNumbOfInstances": "[parameters('numberOfWebSrvs')]",
+    "webSrvDnsNameforLBIP": "[toLower(variables('cdSrvName'))]",
+    "webLbName": "[concat(variables('cdSrvName'), 'lb')]",
+    "webLblb_PIP_Id": "[resourceId('Microsoft.Network/publicIPAddresses',concat(variables('webSrvPublicIP'), 'lb'))]",
+    "webLbId": "[resourceId('Microsoft.Network/loadBalancers',variables('webLbName'))]",
+    "frontEndIPConfigID": "[concat(variables('webLbId'),'/frontendIPConfigurations/LoadBalancerFrontEnd')]",
+    "lbPoolID": "[concat(variables('webLbId'),'/backendAddressPools/BackendPool1')]",
+    "lbProbeID": "[concat(variables('webLbId'),'/probes/tcpProbe')]"
+  },
+  "resources": [
+    {
+      "name": "asLink",
+      "type": "Microsoft.Resources/deployments",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('_artifactsLocation'), '/AzureTemplates/AvailabilitySets.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "name": {
+            "value": "[variables('webSrvAvailabilitySetName')]"
+          },
+          "resourceGroupLocation": {
+            "value": "[resourceGroup().location]"
+          }
+        }
+      }
+    },
+    {
+      "name": "fensgLink",
+      "type": "Microsoft.Resources/deployments",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('_artifactsLocation'), '/AzureTemplates/FENetworkSecurityGroups.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "name": {
+            "value": "[variables('feNSGName')]"
+          },
+          "resourceGroupLocation": {
+            "value": "[resourceGroup().location]"
+          }
+        }
+      }
+    },
+    {
+      "name": "dbnsgLink",
+      "type": "Microsoft.Resources/deployments",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('_artifactsLocation'), '/AzureTemplates/DBNetworkSecurityGroups.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "name": {
+            "value": "[variables('dbNSGName')]"
+          },
+          "resourceGroupLocation": {
+            "value": "[resourceGroup().location]"
+          }
+        }
+      }
+    },
+    {
+      "name": "vnetLink",
+      "type": "Microsoft.Resources/deployments",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('_artifactsLocation'), '/AzureTemplates/PoolVirtualNetworks.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "name": {
+            "value": "[variables('virtualNetworkName')]"
+          },
+          "resourceGroupLocation": {
+            "value": "[resourceGroup().location]"
+          },
+          "addressPrefix": {
+            "value": "[variables('addressPrefix')]"
+          },
+          "feSubnetPrefix": {
+            "value": "[variables('feSubnetPrefix')]"
+          },
+          "dbSubnetPrefix": {
+            "value": "[variables('dbSubnetPrefix')]"
+          },
+          "feNSGName": {
+            "value": "[variables('feNSGName')]"
+          },
+          "dbNSGName": {
+            "value": "[variables('dbNSGName')]"
+          }
+        }
+      },
+      "dependsOn": [
+        "fensgLink",
+        "dbnsgLink"
+      ]
+    },
+    {
+      "name": "saLink",
+      "type": "Microsoft.Resources/deployments",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('_artifactsLocation'), '/AzureTemplates/StorageAccounts.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "name": {
+            "value": "[variables('storageName')]"
+          },
+          "resourceGroupLocation": {
+            "value": "[resourceGroup().location]"
+          },
+          "storageAccountType": {
+            "value": "[parameters('storageAccountType')]"
+          }
+        }
+      }
+    },
+    {
+      "name": "dbpiaLink",
+      "type": "Microsoft.Resources/deployments",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('_artifactsLocation'), '/AzureTemplates/PublicIpAddresses.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "name": {
+            "value": "[variables('sqlPublicIP')]"
+          },
+          "resourceGroupLocation": {
+            "value": "[resourceGroup().location]"
+          },
+          "displayName": {
+            "value": "SqlPIP"
+          }
+        }
+      }
+    },
+    {
+      "name": "dbniLink",
+      "type": "Microsoft.Resources/deployments",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('_artifactsLocation'), '/AzureTemplates/NetworkInterfaces.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "name": {
+            "value": "[variables('sqlSrvDBNicName')]"
+          },
+          "resourceGroupLocation": {
+            "value": "[resourceGroup().location]"
+          },
+          "PIP_Id": {
+            "value": "[concat(variables('sqlPublicIPRef'), 'db')]"
+          },
+          "SubnetRef": {
+            "value": "[variables('sqlSvrDBSubnetRef')]"
+          },
+          "displayName": {
+            "value": "SQLSrvDBNic"
+          }
+        }
+      },
+      "dependsOn": [
+        "vnetLink",
+        "dbpiaLink"
+      ]
+    },
+    {
+      "name": "dbvmLink",
+      "type": "Microsoft.Resources/deployments",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('_artifactsLocation'), '/AzureTemplates/VirtualMachines.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "name": {
+            "value": "[variables('sqlSrvDBName')]"
+          },
+          "resourceGroupLocation": {
+            "value": "[resourceGroup().location]"
+          },
+          "availabilitySetName": {
+            "value": "[variables('webSrvAvailabilitySetName')]"
+          },
+          "vMSize": {
+            "value": "[variables('sqlVmSize')]"
+          },
+          "srvName": {
+            "value": "[variables('sqlSrvDBName')]"
+          },
+          "username": {
+            "value": "[parameters('username')]"
+          },
+          "password": {
+            "value": "[parameters('password')]"
+          },
+          "imageReferencePublisher": {
+            "value": "[variables('sqlImagePublisher')]"
+          },
+          "imageReferenceOffer": {
+            "value": "[parameters('sqlServerOffer')]"
+          },
+          "imageReferenceSku": {
+            "value": "[variables('sqlImageSku')]"
+          },
+          "storageName": {
+            "value": "[variables('storageName')]"
+          },
+          "vhdContainer": {
+            "value": "[variables('vhdContainer')]"
+          },
+          "osDiskName": {
+            "value": "[variables('sqlSrvDBOsDiskName')]"
+          },
+          "nicName": {
+            "value": "[variables('sqlSrvDBNicName')]"
+          },
+          "displayName": {
+            "value": "SQL-Svr-DB"
+          }
+        }
+      },
+      "dependsOn": [
+        "saLink",
+        "dbniLink",
+        "asLink"
+      ]
+    },
+    {
+      "name": "lbpiaLink",
+      "type": "Microsoft.Resources/deployments",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('_artifactsLocation'), '/AzureTemplates/PublicIpAddresses.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "name": {
+            "value": "[concat(variables('webSrvPublicIP'), 'lb')]"
+          },
+          "resourceGroupLocation": {
+            "value": "[resourceGroup().location]"
+          },
+          "srvName": {
+            "value": "[variables('webSrvDnsNameforLBIP')]"
+          },
+          "displayName": {
+            "value": "WebSrvPIP for LB"
+          }
+        }
+      }
+    },
+    {
+      "name": "lbLink",
+      "type": "Microsoft.Resources/deployments",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('_artifactsLocation'), '/AzureTemplates/LoadBalancers.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "name": {
+            "value": "[variables('webLbName')]"
+          },
+          "resourceGroupLocation": {
+            "value": "[resourceGroup().location]"
+          },
+          "webLblb_PIP_Id": {
+            "value": "[variables('webLblb_PIP_Id')]"
+          },
+          "frontEndIPConfigID": {
+            "value": "[variables('frontEndIPConfigID')]"
+          },
+          "lbPoolID": {
+            "value": "[variables('lbPoolID')]"
+          },
+          "lbProbeID": {
+            "value": "[variables('lbProbeID')]"
+          }
+        }
+      },
+      "dependsOn": [
+        "lbpiaLink"
+      ]
+    },
+    {
+      "name": "cdniLink",
+      "type": "Microsoft.Resources/deployments",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('_artifactsLocation'), '/AzureTemplates/NetworkInterfaces.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "name": {
+            "value": "[variables('cdSrvNicName')]"
+          },
+          "resourceGroupLocation": {
+            "value": "[resourceGroup().location]"
+          },
+          "SubnetRef": {
+            "value": "[variables('webSrvSubnetRef')]"
+          },
+          "isLoadBalancer": {
+            "value": "Yes"
+          },
+          "webSrvNumbOfInstances": {
+            "value": "[variables('webSrvNumbOfInstances')]"
+          },
+          "webLbId": {
+            "value": "[variables('webLbId')]"
+          },
+          "displayName": {
+            "value": "cdSrvNic"
+          }
+        }
+      },
+      "dependsOn": [
+        "vnetLink",
+        "lbpiaLink"
+      ]
+    },
+    {
+      "name": "cdvmLink",
+      "type": "Microsoft.Resources/deployments",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('_artifactsLocation'), '/AzureTemplates/VirtualMachines.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "name": {
+            "value": "[variables('cdSrvName')]"
+          },
+          "resourceGroupLocation": {
+            "value": "[resourceGroup().location]"
+          },
+          "isLoadBalancer": {
+            "value": "Yes"
+          },
+          "webSrvNumbOfInstances": {
+            "value": "[variables('webSrvNumbOfInstances')]"
+          },
+          "availabilitySetName": {
+            "value": "[variables('webSrvAvailabilitySetName')]"
+          },
+          "vMSize": {
+            "value": "[variables('webSrvVMSize')]"
+          },
+          "srvName": {
+            "value": "[variables('cdSrvName')]"
+          },
+          "username": {
+            "value": "[parameters('username')]"
+          },
+          "password": {
+            "value": "[parameters('password')]"
+          },
+          "imageReferencePublisher": {
+            "value": "MicrosoftWindowsServer"
+          },
+          "imageReferenceOffer": {
+            "value": "WindowsServer"
+          },
+          "imageReferenceSku": {
+            "value": "2016-Datacenter"
+          },
+          "storageName": {
+            "value": "[variables('storageName')]"
+          },
+          "vhdContainer": {
+            "value": "[variables('vhdContainer')]"
+          },
+          "osDiskName": {
+            "value": "[variables('cdsrvOSDisk')]"
+          },
+          "nicName": {
+            "value": "[variables('cdSrvNicName')]"
+          },
+          "displayName": {
+            "value": "CDSrv"
+          }
+        }
+      },
+      "dependsOn": [
+        "saLink",
+        "cdniLink",
+        "asLink"
+      ]
+    },
+    {
+      "name": "cmpiaLink",
+      "type": "Microsoft.Resources/deployments",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('_artifactsLocation'), '/AzureTemplates/PublicIpAddresses.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "name": {
+            "value": "[variables('caSrvPublicIP')]"
+          },
+          "resourceGroupLocation": {
+            "value": "[resourceGroup().location]"
+          },
+          "srvName": {
+            "value": "[variables('caSrvName')]"
+          },
+          "displayName": {
+            "value": "CASrvPIP"
+          }
+        }
+      }
+    },
+    {
+      "name": "cmniLink",
+      "type": "Microsoft.Resources/deployments",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('_artifactsLocation'), '/AzureTemplates/NetworkInterfaces.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "name": {
+            "value": "[variables('caSrvNicName')]"
+          },
+          "resourceGroupLocation": {
+            "value": "[resourceGroup().location]"
+          },
+          "PIP_Id": {
+            "value": "[variables('casrv_PIP_Id')]"
+          },
+          "SubnetRef": {
+            "value": "[variables('webSrvSubnetRef')]"
+          },
+          "displayName": {
+            "value": "CmSrvNic"
+          }
+        }
+      },
+      "dependsOn": [
+        "vnetLink",
+        "cmpiaLink"
+      ]
+    },
+    {
+      "name": "cmvmLink",
+      "type": "Microsoft.Resources/deployments",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('_artifactsLocation'), '/AzureTemplates/VirtualMachines.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "name": {
+            "value": "[variables('caSrvName')]"
+          },
+          "resourceGroupLocation": {
+            "value": "[resourceGroup().location]"
+          },
+          "availabilitySetName": {
+            "value": "[variables('webSrvAvailabilitySetName')]"
+          },
+          "vMSize": {
+            "value": "[variables('webSrvVMSize')]"
+          },
+          "srvName": {
+            "value": "[variables('caSrvName')]"
+          },
+          "username": {
+            "value": "[parameters('username')]"
+          },
+          "password": {
+            "value": "[parameters('password')]"
+          },
+          "imageReferencePublisher": {
+            "value": "[variables('sqlImagePublisher')]"
+          },
+          "imageReferenceOffer": {
+            "value": "[parameters('sqlServerOffer')]"
+          },
+          "imageReferenceSku": {
+            "value": "[variables('sqlImageSku')]"
+          },
+          "storageName": {
+            "value": "[variables('storageName')]"
+          },
+          "vhdContainer": {
+            "value": "[variables('vhdContainer')]"
+          },
+          "osDiskName": {
+            "value": "[variables('caSrvOSDiks')]"
+          },
+          "nicName": {
+            "value": "[variables('caSrvNicName')]"
+          },
+          "displayName": {
+            "value": "cmWebSrv"
+          }
+        }
+      },
+      "dependsOn": [
+        "saLink",
+        "cmniLink",
+        "asLink"
+      ]
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(variables('sqlSrvDBName'),'/dscExtension')]",
+      "apiVersion": "2015-06-15",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "dbvmLink"
+      ],
+      "tags": {
+        "displayName": "VM Extensions"
+      },
+      "properties": {
+        "publisher": "Microsoft.Powershell",
+        "type": "DSC",
+        "typeHandlerVersion": "2.19",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "wmfVersion": "latest",
+          "configuration": {
+            "url": "[concat(parameters('_artifactsLocation'), '/DSC/', replace('DbServerConfig.ps1', '.ps1', '.zip'))]",
+            "script": "DbServerConfig.ps1",
+            "function": "DbServerConfig"
+          },
+          "configurationArguments": {
+            "sitePrefix": "[concat(parameters('envPrefixName'), '.', parameters('environmentType'))]",
+            "sqlAdminUser": "[parameters('sqlAdminUser')]",
+            "sqlAdminPassword": "[parameters('sqlAdminPassword')]"
+          },
+          "privacy": {
+            "dataCollection": "enable"
+          }
+        },
+        "protectedSettings": {}
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(variables('caSrvName'),'/dscExtension')]",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-06-15",
+      "dependsOn": [
+        "cmvmLink"
+      ],
+      "tags": {
+        "displayName": "VM Extensions"
+      },
+      "properties": {
+        "publisher": "Microsoft.Powershell",
+        "type": "DSC",
+        "typeHandlerVersion": "2.19",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "wmfVersion": "latest",
+          "configuration": {
+            "url": "[concat(parameters('_artifactsLocation'), '/DSC/', replace('CmServerConfig.ps1', '.ps1', '.zip'))]",
+            "script": "CmServerConfig.ps1",
+            "function": "CmServerConfig"
+          },
+          "configurationArguments": {
+            "rdpUsername": "[parameters('username')]",
+            "rdpPassword": "[parameters('password')]",
+            "artifactsLocation": "[concat(parameters('_artifactsLocation'), '/DSC/')]",
+            "resourcesPath": "[parameters('serverResourcesFolder')]",
+            "solrSSLPassword": "[parameters('solrSSLPassword')]",
+            "solrSSLFileName": "[parameters('solrSSLFileName')]",
+            "sitecoreWDPPackageNameNoExtension": "[parameters('sitecoreXP0WdpPackage')]",
+            "sitecoreConfigurationFilesNameNoExtension": "[parameters('sitecoreConfigurationFilesNameNoExtensionXP0')]",
+            "sitePrefix": "[concat(parameters('envPrefixName'), '.', parameters('environmentType'))]",
+            "siteDns": "[concat(variables('caSrvName'), '.', resourceGroup().location, '.cloudapp.azure.com')]",
+            "xConnectPackage": "[parameters('xConnectPackage')]",
+            "sitecorePackage": "[parameters('sitecoreSingleWdpPackage')]",
+            "sqlServer": "[variables('sqlSrvDBName')]",
+            "sqlAdminUser": "[parameters('sqlAdminUser')]",
+            "sqlAdminPassword": "[parameters('sqlAdminPassword')]",
+            "solrUrl": "[parameters('solrUrl')]",
+            "licenseFile": "[parameters('licenseFile')]",
+            "solrMainConfigSet": "[parameters('solrMainConfigSetName')]",
+            "solrXdbConfigSet": "[parameters('solrXdbConfigSetName')]",
+            "sifVersion": "[parameters('sifVersion')]"
+          },
+          "privacy": {
+            "dataCollection": "enable"
+          }
+        },
+        "protectedSettings": {}
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(variables('cdSrvName'), copyindex(),'/dscExtension')]",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-06-15",
+      "copy": {
+        "name": "webSrvMachineLoop",
+        "count": "[variables('webSrvNumbOfInstances')]"
+      },
+      "dependsOn": [
+        "cdvmLink",
+        "[resourceId('Microsoft.Compute/virtualMachines/extensions/', variables('caSrvName'), 'dscExtension')]"
+      ],
+      "tags": {
+        "displayName": "VM Extensions"
+      },
+      "properties": {
+        "publisher": "Microsoft.Powershell",
+        "type": "DSC",
+        "typeHandlerVersion": "2.19",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "wmfVersion": "latest",
+          "configuration": {
+            "url": "[concat(parameters('_artifactsLocation'), '/DSC/', replace('CdServerConfig.ps1', '.ps1', '.zip'))]",
+            "script": "CdServerConfig.ps1",
+            "function": "CdServerConfig"
+          },
+          "configurationArguments": {
+            "rdpUsername": "[parameters('username')]",
+            "rdpPassword": "[parameters('password')]",
+            "artifactsLocation": "[concat(parameters('_artifactsLocation'), '/DSC/')]",
+            "resourcesPath": "[parameters('serverResourcesFolder')]",
+            "solrSSLPassword": "[parameters('solrSSLPassword')]",
+            "solrSSLFileName": "[parameters('solrSSLFileName')]",
+            "sitecoreCDWdpPackage": "[parameters('sitecoreCDWdpPackage')]",
+            "sitecoreConfigurationFileXp1Cd": "[parameters('sitecoreXp1CDJson')]",
+            "sitePrefix": "[concat(parameters('envPrefixName'), '.', parameters('environmentType'))]",
+            "siteDns": "[concat(variables('webSrvDnsNameforLBIP'), '.',  resourceGroup().location, '.cloudapp.azure.com')]",
+            "sqlServer": "[variables('sqlSrvDBName')]",
+            "solrUrl": "[parameters('solrUrl')]",
+            "licenseFile": "[parameters('licenseFile')]",
+            "xconnectCert": "[concat(parameters('envPrefixName'), '.', parameters('environmentType'), '.xconnect_client')]",
+            "xConnectServerName": "[variables('caSrvName')]",
+            "xconnectHost": "[concat(variables('caSrvName'), '.', resourceGroup().location, '.cloudapp.azure.com.xconnect')]",
+            "sifVersion": "[parameters('sifVersion')]",
+            "xconnectServer": "[variables('caSrvName')]"
+          },
+          "privacy": {
+            "dataCollection": "enable"
+          }
+        },
+        "protectedSettings": {}
+      }
+    }
+
+
+  ]
+}
