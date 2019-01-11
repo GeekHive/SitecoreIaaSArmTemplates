@@ -1,7 +1,5 @@
 # SitecoreIaaSArmTemplates
 
-*To get started right away, skip to the "General Deployment Steps" section.*
-
 This repository contains Azure Resource Management (ARM) templates to create various Sitecore infrastructure on IaaS infrastructure, i.e. Virtual Machines (VMs). Once configured and deployed, the resulting environments are fully ready-to-go, error-free Sitecore sites. Remote Desktop Protocol (RDP) is also set up to allow you to view the server and make any additional tweaks.
 
 One of the goals of this repository was to leave the Sitecore installs as out-of-the-box as possible. They rely on basic SIF commands. The core pieces are there, and can be modififed as needed depending on the goals of a deployment.
@@ -32,13 +30,40 @@ This ARM template deploys Sitecore XP1 on the following infrastructure: 1 VM for
 
 [For specific deployment instructions, visit the Single Sitecore 9 Read Me](Sitecore/9.0.x/XCD1CA%20Sitecore9.0.x/README.md) 
 
+# What does this all do?
+
+It does quite a bit. For example, each web server that is provisioned gets a suite of nice-to-have's:
+
+Installs...
+
+1. IIS
+   1. Dynamic Compression
+   2. Static Compression
+   3. URL Rewrite
+2. .Net versions
+3. Various .Net prerequisites
+4. Notepad++
+5. 7-zip
+
+Beyond these, it installs other prerequisites per deployment type. For example:
+
+#### Solr
+
+Installs JRE SDK
+
+#### Web Servers
+
+Installs SQL DAC dependencies, enables counter permissions, etc.
+
+In short, if it's possible in a DSC and makes life a little easier, it installs it. One piece that is unstable is setting up user preferences, such as viewing file extensions, setting Quick Access links, etc. These pieces are intentionally omitted.
+
 # General Deployment Steps
 
 ### Prerequisites
 
 **Install Azure PowerShell on the machine you wish to deploy the ARM templates from (e.g. your local developer machine): https://docs.microsoft.com/en-us/powershell/azure/install-az-ps?view=azps-1.0.0**
 
-# Deploy Arm Template
+## Deploy Arm Template
 
 In order to run this step, please first set up the parameters of a deployment in one of the above deployment sections. The individual deployments will link back to this section after you've properly set up your script to be deployed.
 
@@ -53,3 +78,35 @@ In order to run this step, please first set up the parameters of a deployment in
    1. Substitute `[LOCATION]` for a valid Azure Resource Group location, e.g. `eastus2`. Find the full list here: https://management.azure.com/subscriptions/{subscriptionId}/locations?api-version=2016-06-01 (put in your subscription ID here)
    2. Substitute `[ResourceGroupName]` with the name you would like to call this resource group. All resources deployed will exist in the same resource group
 7. Once executed, the script will upload any assets in the DSC folder and begin providing output
+
+# Troubleshooting Failed Deployments
+
+If you begin altering parameters or PowerShell scripts, you may run into issues.
+
+## Errors prior to deployment completion
+
+The best way to debug errors that end the deployment prematurely is to review the output in the PowerShell window. Often the failures are a result of incorrect pathing or a missing file.
+
+## Errors in the DSC
+
+Sometimes the deployment completes with a status of success, but PowerShell reports errors during the execution of one or many DSCs. To troubleshoot, RDP to the servers that encountered the error.
+
+Navigate to `C:\Windows\System32\Configuration\ConfigurationStatus` and sort the list by last modified. The most recent file will contain the output from the DSC. This is the most useful method for solving issues.
+
+# Manually Running DSCs
+
+If you are making major modificatiosn to an existing DSC, it is painful to wait for a full deployment to test small changes. The best thing to do is to work with an already provisioned server. Remote into the server and run the DSC manually.
+
+1. Copy the DSC powershell script (`WebServerConfig.ps1`) to the VM (any directory)
+2. Open PowerShell as admin
+3. Navigate to the folder with the PowerShell DSC script
+4. Run `. ./WebServerConfig.ps1` (this will add to your path variables temporarily)
+5. Run `WebServerConfig` (exclude the .ps1 portion)
+   1. If there are any parameters in the PowerShell script, pass them in with `WebServerConfig -param1 value1 -param2 value2`
+   2. This step will create a folder in your working directory with a `*.mof` file
+6. Run `Start-DscConfiguration -Verbose -Force -Path "Path to directory that has the *.mof file"`
+   1. Verbose gives you more output
+   2. Force ensures a previous iteration is not stalled
+   3. Path should be a directory, not the actual file
+
+More information on Start-DscConfiguration: https://docs.microsoft.com/en-us/powershell/module/psdesiredstateconfiguration/start-dscconfiguration?view=powershell-5.1

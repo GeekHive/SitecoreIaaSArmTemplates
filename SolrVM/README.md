@@ -1,4 +1,4 @@
-[<< Back to main README.md](../)
+[<< Back to main README.md](../README.md)
 
 # Solr ARM Deployment Guide
 
