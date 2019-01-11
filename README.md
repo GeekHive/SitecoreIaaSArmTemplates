@@ -38,6 +38,18 @@ This ARM template deploys Sitecore XP1 on the following infrastructure: 1 VM for
 
 **Install Azure PowerShell on the machine you wish to deploy the ARM templates from (e.g. your local developer machine): https://docs.microsoft.com/en-us/powershell/azure/install-az-ps?view=azps-1.0.0**
 
-### Steps
+# Deploy Arm Template
 
-1. 
+In order to run this step, please first set up the parameters of a deployment in one of the above deployment sections. The individual deployments will link back to this section after you've properly set up your script to be deployed.
+
+1. Open a PowerShell window as an administrator
+2. Navigate to your copied deployment folder (This folder should contain the file `Deploy-AzureResourceGroup.ps1`)
+3. Type `Login-AzureRmAccount`
+   1. This will request that you login to Azure in a separate window
+4. After logging in successfully, type `Get-AzureRMSubscription`
+   1. This will return a list of all subscriptions associated with your username
+5. Next, type `Select-AzureRmSubscription -subscriptionID [ID]` (The [ID] value should be pulled from the output from step 4, find the subscription ID you wish to deploy this resource group to)
+6. Type `.\Deploy-AzureResourceGroup.ps1 -ArtifactStagingDirectory 'WebCluster' -ResourceGroupLocation [LOCATION] -ResourceGroupName '[RESOURCEGROUPNAME]'`
+   1. Substitute `[LOCATION]` for a valid Azure Resource Group location, e.g. `eastus2`. Find the full list here: https://management.azure.com/subscriptions/{subscriptionId}/locations?api-version=2016-06-01 (put in your subscription ID here)
+   2. Substitute `[ResourceGroupName]` with the name you would like to call this resource group. All resources deployed will exist in the same resource group
+7. Once executed, the script will upload any assets in the DSC folder and begin providing output
