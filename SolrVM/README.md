@@ -1,4 +1,4 @@
-[<< Back to main README.md](../README.md)
+[<< Back to main README.md](../)
 
 # Solr ARM Deployment Guide
 
@@ -19,3 +19,11 @@
 # Deploy the ARM template
 
 To deploy this ARM template, view the shared deployment steps from the main [README](../README.md#Deploy-ARM-Template).
+
+# Post Deployment (IMPORTANT)
+
+After the deployment completes, it is important that you obtaint he Solr SSL cert. This will be used on all Sitecore deployments.
+
+Location: `c:\Solr\solr-[SOLRVERSION]\server\etc\solr-ssl.keystore.pfx`
+
+Copy this down to your local machine to later use on Sitecore deployments.
