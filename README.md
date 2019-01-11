@@ -57,6 +57,12 @@ Installs SQL DAC dependencies, enables counter permissions, etc.
 
 In short, if it's possible in a DSC and makes life a little easier, it installs it. One piece that is unstable is setting up user preferences, such as viewing file extensions, setting Quick Access links, etc. These pieces are intentionally omitted.
 
+## Non VM Tasks
+
+For each deployment type, all dependent resources are created: Network Security Group, Storage Account, Availability Set, Network Interface, Public IP Address, Virtual Network.
+
+All deployments share the same set of [Azure Link Templates](/LinkTemplates). Reviewing these Link Templates can give a sense for what each one is responsible for. They help make the primary deployment scripts smaller and easier to understand.
+
 # General Deployment Steps
 
 ### Prerequisites
