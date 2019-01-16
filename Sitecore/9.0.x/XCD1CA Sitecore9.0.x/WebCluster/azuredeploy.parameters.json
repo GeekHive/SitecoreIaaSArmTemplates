@@ -14,9 +14,6 @@
     "password": {
       "value": "RDPPASSWORD"
     },
-    "licenseFile": {
-      "value": "license.xml"
-    },
     "sitecoreXP0WdpPackage": {
       "value": "Sitecore 9.0.2 rev. 180604 (WDP XP0 packages)"
     },

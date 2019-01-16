@@ -108,7 +108,8 @@
       "type": "string",
       "metadata": {
         "description": "Filename of sitecore license file"
-      }
+      },
+	  "defaultValue": "license.xml"
     },
     "sitecoreXP0WdpPackage": {
       "type": "string",
