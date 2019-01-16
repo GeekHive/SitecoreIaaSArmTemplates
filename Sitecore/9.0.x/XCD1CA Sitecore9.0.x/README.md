@@ -52,14 +52,17 @@
 	  2. `Sitecore 9.0.x rev. XXXXXX (WDP XP0 packages).zip` - this was downloaded in step 7.5 above
 	  3. `Sitecore 9.0.x rev. XXXXXX (OnPrem)_cd.scwdp.zip` - this was downloaded in step 7.6 above
 	  4. `sitecore-XP1-cd.json` - this was pulled in step 7.10 above
-	  4. `solr-ssl.keystore.pfx` - This is the exported Solr SSL cert obtained during the Solr deployment
-	  5. (The CdServerConfig.ps1, CmServerConfig.ps1 and DbServerConfig.ps1 are already included and should remain in place)
+	  5. `solr-ssl.keystore.pfx` - This is the exported Solr SSL cert obtained during the Solr deployment
+	  6. (The CdServerConfig.ps1, CmServerConfig.ps1 and DbServerConfig.ps1 are already included and should remain in place)
    
 # Deploy the ARM template
 
 To deploy this ARM template, view the shared deployment steps from the main [README](../../../README.md#Deploy-ARM-Template).
 
 # Post Deployment (IMPORTANT)
+
+CM URL: http://(envPrefixName)ca(environmentType).(location).cloudapp.azure.com/sitecore/shell
+CD URL (load balanced): http://(envPrefixName)(environmentType).(location).cloudapp.azure.com/
 
 After the deployment completes, navigate to the Sitecore CM instance
 1. Rebuild all indexes
