@@ -150,10 +150,10 @@ Configuration WebServerConfig
 		Script GetJRE{
 			GetScript = { @{ Result = (Test-Path -Path "c:\jdk.exe") } }
 			SetScript = {
-				$source = "https://download.oracle.com/otn-pub/java/jdk/8u191-b12/2787e4a523244c269598db4e85c51e0c/jdk-8u191-windows-x64.exe"
+				$source = "https://download.oracle.com/otn-pub/java/jdk/8u201-b09/42970487e3af4f5aa5bca3f542482c60/jdk-8u201-windows-x64.exe"
 				$destination = "C:\jdk.exe"
 				$client = new-object System.Net.WebClient 
-				$cookie = "oraclelicense=accept-securebackup-cookie"
+				$cookie = "gpw_e24=http%3a%2F%2Fwww.oracle.com%2Ftechnetwork%2Fjava%2Fjavase%2Fdownloads%2Fjdk8-downloads-2133151.html; oraclelicense=accept-securebackup-cookie;"
 				$client.Headers.Add([System.Net.HttpRequestHeader]::Cookie, $cookie) 
 				$client.downloadFile($source, $destination)
 				Unblock-File -Path $destination
@@ -163,9 +163,9 @@ Configuration WebServerConfig
 		
 		Package Install_JRE{
 			Ensure = "Present"
-			Name = "Java SE Development Kit 8 Update 191 (64-bit)"
+			Name = "Java SE Development Kit 8 Update 201 (64-bit)"
 			Path = "c:\jdk.exe"
-			ProductId="{64A3A4F4-B792-11D6-A78A-00B0D0180191}"
+			ProductId="{64A3A4F4-B792-11D6-A78A-00B0D0180201}"
 			Arguments = "/q"
 			DependsOn="[Script]GetJRE"
 		}
