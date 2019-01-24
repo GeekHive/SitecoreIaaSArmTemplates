@@ -110,7 +110,7 @@ If you are making major modificatiosn to an existing DSC, it is painful to wait 
 5. Run `WebServerConfig` (exclude the .ps1 portion)
    1. If there are any parameters in the PowerShell script, pass them in with `WebServerConfig -param1 value1 -param2 value2`
    2. This step will create a folder in your working directory with a `*.mof` file
-6. Run `Start-DscConfiguration -Verbose -Force -Path "Path to directory that has the *.mof file"`
+6. Run `Start-DscConfiguration -Verbose -Force -Path "Path to directory that has the *.mof file"` -Wait
    1. Verbose gives you more output
    2. Force ensures a previous iteration is not stalled
    3. Path should be a directory, not the actual file
