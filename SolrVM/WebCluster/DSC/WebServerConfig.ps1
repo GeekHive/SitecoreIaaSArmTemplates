@@ -216,7 +216,7 @@ Configuration WebServerConfig
 		Script SetJavaEnvironmentVariable{
 			GetScript = { @{ Result = ([Environment]::GetEnvironmentVariable("JAVA_HOME", [EnvironmentVariableTarget]::Machine)) } }
 			SetScript = {
-				[Environment]::SetEnvironmentVariable("JAVA_HOME", "C:\Program Files\Java\jdk1.8.0_191", [EnvironmentVariableTarget]::Machine)
+				[Environment]::SetEnvironmentVariable("JAVA_HOME", "C:\Program Files\Java\jdk1.8.0_201", [EnvironmentVariableTarget]::Machine)
 			}
 			TestScript = {Test-Path env:"JAVA_HOME"}
 		}
