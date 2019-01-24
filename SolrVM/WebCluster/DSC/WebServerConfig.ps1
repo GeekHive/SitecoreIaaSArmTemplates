@@ -171,20 +171,20 @@ Configuration WebServerConfig
 		}
 		
 		Script GetSolr{
-			GetScript = { @{ Result = (Test-Path -Path "c:\solr.zip") } }
+			GetScript = { @{ Result = (Test-Path -Path "c:\solr-$using:solrVersion.zip") } }
 			SetScript = {
 				$Uri = "http://archive.apache.org/dist/lucene/solr/$using:solrVersion/solr-$using:solrVersion.zip"
-				$OutFile = "c:\solr.zip"
+				$OutFile = "c:\solr-$using:solrVersion.zip"
 				Invoke-WebRequest -Uri $Uri -OutFile $OutFile -UseBasicParsing
 				Unblock-File -Path $OutFile
 			}	
-			TestScript = {Test-Path -Path "c:\solr.zip"}
+			TestScript = {Test-Path -Path "c:\solr-$using:solrVersion.zip"}
 		}
 		
 		Script ExpandSolr{
 			GetScript = { @{ Result = (Test-Path -Path "c:\Solr\solr-$using:solrVersion"); } }
 			SetScript = {
-				Expand-Archive "c:\solr.zip" -DestinationPath "c:\Solr"
+				Expand-Archive "c:\solr-$using:solrVersion.zip" -DestinationPath "c:\Solr"
 			}	
 			TestScript = {Test-Path -Path "c:\Solr\solr-$using:solrVersion"}
 			DependsOn="[Script]GetSolr"
