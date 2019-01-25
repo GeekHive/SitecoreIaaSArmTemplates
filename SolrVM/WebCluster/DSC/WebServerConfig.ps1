@@ -6,7 +6,8 @@ Configuration WebServerConfig
 		[String]$solrSslPassword,
 		[String]$solrPort,
 		[String]$dns,
-		[String]$artifactsLocation
+		[String]$artifactsLocation,
+		[Boolean]$useSSL = $true
     )
 	Import-DscResource -ModuleName PSDesiredStateConfiguration
 	
@@ -173,10 +174,11 @@ Configuration WebServerConfig
 		Script GetSolr{
 			GetScript = { @{ Result = (Test-Path -Path "c:\solr-$using:solrVersion.zip") } }
 			SetScript = {
-				$Uri = "http://archive.apache.org/dist/lucene/solr/$using:solrVersion/solr-$using:solrVersion.zip"
-				$OutFile = "c:\solr-$using:solrVersion.zip"
-				Invoke-WebRequest -Uri $Uri -OutFile $OutFile -UseBasicParsing
-				Unblock-File -Path $OutFile
+				$source = "http://archive.apache.org/dist/lucene/solr/$using:solrVersion/solr-$using:solrVersion.zip"
+				$destination = "c:\solr-$using:solrVersion.zip"
+				$client = new-object System.Net.WebClient 
+				$client.downloadFile($source, $destination)
+				Unblock-File -Path $destination
 			}	
 			TestScript = {Test-Path -Path "c:\solr-$using:solrVersion.zip"}
 		}
@@ -233,7 +235,7 @@ Configuration WebServerConfig
 			}
 			TestScript = {
 				$cert = Get-ChildItem -Path Cert: -Recurse | Where FriendlyName -eq "Solr-$using:solrVersion"
-				[boolean]$cert
+				return $using:useSSL -and [boolean]$cert
 			}
 		}
 		
@@ -246,7 +248,7 @@ Configuration WebServerConfig
 				$cert | Export-PfxCertificate -FilePath $certStore -Password $certpwd | Out-Null
 			}
 			TestScript = {
-				Test-Path -Path "c:\Solr\solr-$using:solrVersion\server\etc\solr-ssl.keystore.pfx"
+				return $using:useSSL -and (Test-Path -Path "c:\Solr\solr-$using:solrVersion\server\etc\solr-ssl.keystore.pfx")
 			}
 			DependsOn="[Script]GenerateSolrCert"
 		}
@@ -258,16 +260,24 @@ Configuration WebServerConfig
 				$bin = "$installLocation\bin"
 				$cfg = Get-Content "$bin\solr.in.cmd"
 				Rename-Item "$bin\solr.in.cmd" "$bin\solr.in.cmd.old"
+				
+				if($using:useSSL){
 				$certStore = "$installLocation\server\etc\solr-ssl.keystore.pfx"
+					
 				$newCfg = $cfg | % { $_ -replace "REM set SOLR_SSL_KEY_STORE=etc/solr-ssl.keystore.jks", "set SOLR_SSL_KEY_STORE=$certStore" }
-				$newCfg = $newCfg | % { $_ -replace "REM set SOLR_SSL_KEY_STORE_PASSWORD=$using:solrSslPassword", "set SOLR_SSL_KEY_STORE_PASSWORD=$using:solrSslPassword" }
+					$newCfg = $newCfg | % { $_ -replace "REM set SOLR_SSL_KEY_STORE_PASSWORD=secret", "set SOLR_SSL_KEY_STORE_PASSWORD=$using:solrSslPassword" }
 				$newCfg = $newCfg | % { $_ -replace "REM set SOLR_SSL_TRUST_STORE=etc/solr-ssl.keystore.jks", "set SOLR_SSL_TRUST_STORE=$certStore" }
-				$newCfg = $newCfg | % { $_ -replace "REM set SOLR_SSL_TRUST_STORE_PASSWORD=$using:solrSslPassword", "set SOLR_SSL_TRUST_STORE_PASSWORD=$using:solrSslPassword" }
-				$newCfg = $newCfg | % { $_ -replace "REM set SOLR_HOST=127.0.0.1", "set SOLR_HOST=localhost" }
+					$newCfg = $newCfg | % { $_ -replace "REM set SOLR_SSL_TRUST_STORE_PASSWORD=secret", "set SOLR_SSL_TRUST_STORE_PASSWORD=$using:solrSslPassword" }
+					$newCfg = $newCfg | % { $_ -replace "REM set SOLR_HOST=192.168.1.1", "set SOLR_HOST=$using:dns" }
 				$newCfg | Set-Content "$bin\solr.in.cmd"
 			}
+				else{
+					$newCfg = $cfg | % { $_ -replace "REM set SOLR_HOST=192.168.1.1", "set SOLR_HOST=$using:dns" }
+					$newCfg | Set-Content "$bin\solr.in.cmd"
+				}
+			}
 			TestScript = {
-				Test-Path -Path "c:\Solr\solr-$using:solrVersion\bin\solr.in.cmd.old"
+				return Test-Path -Path "c:\Solr\solr-$using:solrVersion\bin\solr.in.cmd.old"
 			}
 			DependsOn="[Script]ExportSolrCert"
 		}

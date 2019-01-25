@@ -373,7 +373,8 @@
 			"solrSslPassword" : "[parameters('solrSslPassword')]",
 			"solrPort" : "[parameters('solrPort')]",
 			"dns" : "[concat(parameters('envPrefixName'), parameters('environmentType'), '.', parameters('location'), '.', 'cloudapp.azure.com')]",
-			"artifactsLocation": "[concat(parameters('_artifactsLocation'), '/DSC/')]"
+			"artifactsLocation": "[concat(parameters('_artifactsLocation'), '/DSC/')]",
+			"useSSL": true
           },
           "privacy": {
             "dataCollection": "enable"
