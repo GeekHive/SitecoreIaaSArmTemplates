@@ -10,7 +10,9 @@ Note, only Sitecore 9.0.x is supported at the moment. Support for 9.1 brings wit
 
 The ARM templates create all reliant Azure infrastructure: NICs, PIPs, Availability Sets, NSGs, Storage Accounts, Vnets, VMs. All resources are configurable after created. For example, if you wish to make Solr _not_ publicly accessible, modify the NIC post deployment.
 
-## Types of Deployments
+## Types of Deployments/How To Use This Repository
+
+_Choose one of the following_
 
 ### Solr VM
 
