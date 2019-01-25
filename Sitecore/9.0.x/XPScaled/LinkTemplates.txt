@@ -1,0 +1,9 @@
+AvailabilitySets
+DBNetworkSecurityGroups
+FENetworkSecurityGroups
+LoadBalancers
+NetworkInterfaces
+PublicIpAddresses
+StorageAccounts
+VirtualMachines
+PoolVirtualNetworks

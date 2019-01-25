@@ -1,23 +1,16 @@
 [<< Back to main README.md](../../../README.md)
 
-# Sitecore 9.0.x XP0 Single Deployment Guide
+# Sitecore 9.0.x XP Single Deployment Guide
 
 1. Clone the repo
-2. Copy all contents of the `Single Sitecore9VM` folder to a new location outside of the repo
-3. Navigate to the folder `<your folder>\Single Sitecore9VM\WebCluster\AzureTemplates`
-4. From the original repo LinkTemplates folder (located in repo root), copy the following files into this directory
-   1. AvailabilitySets.json
-   2. FENetworkSecurityGroups.json
-   3. NetworkInterfaces.json
-   4. PublicIpAddresses.json
-   5. StorageAccounts.json
-   6. VirtualMachines.json
-   7. VirtualNetworks.json
-5. Navigate to the folder `<your folder>\Single Sitecore9VM\WebCluster`
-4. In here you will see 2 JSON files: `azuredeploy.json` and `azuredeploy.parameters.json`
-5. Feel free to view the contents of `azuredeploy.json`, but keep in mind you shouldn't normally touch this file
-6. Open `azuredeploy.parameters.json` in your favorite JSON editor
-7. Modify the parameters to your needs
+2. Open PowerShell in the repo root
+3. Run `.\Create-DeploymentFolder.ps1 -DeploymentName "MyClientDev" -Template Sitecore -Version 9.0.x -Topology XPSingle`
+   1. This command will copy the required deployment files to "<repo root>\deployments\MyClientDev"
+4. Navigate to the folder `<repo root>\deployments\MyClientDev\WebCluster`
+5. In here you will see 2 JSON files: `azuredeploy.json` and `azuredeploy.parameters.json`
+6. Feel free to view the contents of `azuredeploy.json`, but keep in mind you shouldn't normally touch this file
+7. Open `azuredeploy.parameters.json` in your favorite JSON editor
+8. Modify the parameters to your needs
    1. envPrefixName: This will ultimately be the _first_ part of your public URL. Give it a unique value per client, e.g. "gogle" (up to 5 chars for now, due to reuse of variable in deployment)
    2. environmentType: This will ultimately be the _second_ part of your public URL. Give it a value to specify the environment, e.g. "uat" (up to 5 chars for now, due to reuse of variable in deployment)
    3. username: the RDP username used to log in after deployment
@@ -35,7 +28,7 @@
    11. sitecorePackage: Extract the file from step 5 and find the name of the Sitecore Single file _with_ ".zip", e.g. "Sitecore 9.0.2 rev. 180604 (OnPrem)_single.scwdp.zip"
    12. sqlAdminUser: SQL admin account to be created
    13. sqlAdminPassword: SQL admin password to be created
-8. Include prerequisite files
+9. Include prerequisite files
    1. The following files must be included in the `WebCluster\DSC` folder. They will be uploaded as part of the deployment.
       1. `license.xml` - a valid Sitecore license
 	  2. `Sitecore 9.0.x rev. XXXXXX (WDP XP0 packages).zip` - this was downloaded in step 7.5 above

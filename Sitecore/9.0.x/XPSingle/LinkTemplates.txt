@@ -1,0 +1,7 @@
+AvailabilitySets
+FENetworkSecurityGroups
+NetworkInterfaces
+PublicIpAddresses
+StorageAccounts
+VirtualMachines
+VirtualNetworks

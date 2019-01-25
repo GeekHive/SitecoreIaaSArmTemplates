@@ -8,7 +8,7 @@ On average, the deployment of these environments is around 30 min. Including an 
 
 Note, only Sitecore 9.0.x is supported at the moment. Support for 9.1 brings with it further enhancements with SIF 2.0.0. The bulk of the infrastructure will remain largely the same. Only the DSC (where the Sitecore installs occur) is where changes need to be made.
 
-All ARM templates create all reliant Azure infrastructure: NICs, PIPs, Availability Sets, NSGs, Storage Accounts, Vnets, VMs. All are configurable after created. For example, if you wish to make Solr NOT publicly accessible, modify the NIC post deployment.
+The ARM templates create all reliant Azure infrastructure: NICs, PIPs, Availability Sets, NSGs, Storage Accounts, Vnets, VMs. All resources are configurable after created. For example, if you wish to make Solr _not_ publicly accessible, modify the NIC post deployment.
 
 ## Types of Deployments
 
@@ -22,13 +22,13 @@ This ARM template will create a Windows VM that hosts a shared Solr instance. It
 
 This ARM template deploys a Sitecore XP0 Single instance. It has a reliance on the shared Solr VM created with the accompanying ARM template. Other than Solr, all other Sitecore prereq's are on the single Windows 2016 VM. The deployment will yield an error-free, publicly accessible Sitecore instance.
 
-[For specific deployment instructions, visit the Single Sitecore 9 Read Me](Sitecore/9.0.x/Single%20Sitecore9VM/README.md) 
+[For specific deployment instructions, visit the Single Sitecore 9 Read Me](Sitecore/9.0.x/XPSingle/README.md) 
 
 ### Sitecore XP1 Scaled
 
 This ARM template deploys Sitecore XP1 on the following infrastructure: 1 VM for SQL, 1 VM for CM (set up as standalone) and any number of VM's for CD (load balanced, number is parameterized).
 
-[For specific deployment instructions, visit the Single Sitecore 9 Read Me](Sitecore/9.0.x/XCD1CA%20Sitecore9.0.x/README.md) 
+[For specific deployment instructions, visit the Single Sitecore 9 Read Me](Sitecore/9.0.x/XPScaled/README.md) 
 
 # What does this all do?
 

@@ -3,12 +3,13 @@
 # Solr ARM Deployment Guide
 
 1. Clone the repo
-2. Copy all contents of the SolrVM folder to a new location outside of the repo
-3. Navigate to the folder `<your folder>\SolrVM\WebCluster`
-4. In here you will see 2 JSON files: `azuredeploy.json` and `azuredeploy.parameters.json`
-5. Feel free to view the contents of `azuredeploy.json`, but keep in mind you shouldn't normally touch this file
-6. Open `azuredeploy.parameters.json` in your favorite JSON editor
-7. Modify the parameters to your needs
+2. Open PowerShell in the repo root
+3. Run `.\Create-DeploymentFolder.ps1 -DeploymentName "MyClientSolr" -Template SolrVM`
+4. Navigate to the folder `~\deployments\MyClientSolr_SolrVM\WebCluster`
+5. In here you will see 2 JSON files: `azuredeploy.json` and `azuredeploy.parameters.json`
+6. Feel free to view the contents of `azuredeploy.json`, but keep in mind you shouldn't normally touch this file
+7. Open `azuredeploy.parameters.json` in your favorite JSON editor
+8. Modify the parameters to your needs
    1. envPrefixName: This will ultimately be the _first_ part of your public URL. Give it a unique value per client, e.g. "gogle" (up to 5 chars for now, due to reuse of variable in deployment)
    2. environmentType: This will ultimately be the _second_ part of your public URL. Give it a value to specify the environment, e.g. "uat" (up to 5 chars for now, due to reuse of variable in deployment)
    3. username: the RDP username used to log in after deployment
