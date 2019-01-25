@@ -24,13 +24,13 @@ This ARM template will create a Windows VM that hosts a shared Solr instance. It
 
 This ARM template deploys a Sitecore XP0 Single instance. It has a reliance on the shared Solr VM created with the accompanying ARM template. Other than Solr, all other Sitecore prereq's are on the single Windows 2016 VM. The deployment will yield an error-free, publicly accessible Sitecore instance.
 
-[For specific deployment instructions, visit the Single Sitecore 9 Read Me](Sitecore/9.0.x/XPSingle/README.md) 
+[For specific deployment instructions, visit the XP Single Sitecore 9 Read Me](Sitecore/9.0.x/XPSingle/README.md) 
 
 ### Sitecore XP Scaled
 
 This ARM template deploys Sitecore XP1 on the following infrastructure: 1 VM for SQL, 1 VM for CM (set up as standalone) and any number of VM's for CD (load balanced, number is parameterized).
 
-[For specific deployment instructions, visit the Single Sitecore 9 Read Me](Sitecore/9.0.x/XPScaled/README.md) 
+[For specific deployment instructions, visit the XP Scaled Sitecore 9 Read Me](Sitecore/9.0.x/XPScaled/README.md) 
 
 # What does this all do?
 
