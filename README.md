@@ -12,7 +12,7 @@ The ARM templates create all reliant Azure infrastructure: NICs, PIPs, Availabil
 
 ## Types of Deployments/How To Use This Repository
 
-_Choose one of the following_
+_Select one of the following_
 
 ### Solr VM
 
@@ -20,13 +20,13 @@ This ARM template will create a Windows VM that hosts a shared Solr instance. It
 
 [For specific deployment instructions, visit the Solr VM Read Me](SolrVM/README.md)
 
-### Sitecore XP0 Single
+### Sitecore XP Single
 
 This ARM template deploys a Sitecore XP0 Single instance. It has a reliance on the shared Solr VM created with the accompanying ARM template. Other than Solr, all other Sitecore prereq's are on the single Windows 2016 VM. The deployment will yield an error-free, publicly accessible Sitecore instance.
 
 [For specific deployment instructions, visit the Single Sitecore 9 Read Me](Sitecore/9.0.x/XPSingle/README.md) 
 
-### Sitecore XP1 Scaled
+### Sitecore XP Scaled
 
 This ARM template deploys Sitecore XP1 on the following infrastructure: 1 VM for SQL, 1 VM for CM (set up as standalone) and any number of VM's for CD (load balanced, number is parameterized).
 
