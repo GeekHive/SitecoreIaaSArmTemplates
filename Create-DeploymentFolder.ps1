@@ -27,11 +27,12 @@ $linkTemplates = Get-Item -Path "$Source\LinkTemplates.txt" -ErrorAction Silentl
 
 if($linkTemplates){
 	Write-Host "-- Deployment requires the following Link Templates:"
+	New-Item -ItemType Directory -Path "$Destination\WebCluster\AzureTemplates\"
 	Write-Host "----------------------------------------------------"
 	foreach($linkTemplate in [System.IO.File]::ReadLines($linkTemplates))
 	{
 		Write-Host "-- $linkTemplate"
-		Copy-Item -Path "$PWD\LinkTemplates\$linkTemplate.json" -Destination "$Destination\WebCluster\AzureTemplates"
+		Copy-Item -Path "$PWD\LinkTemplates\$linkTemplate.json" -Destination "$Destination\WebCluster\AzureTemplates\"
 	}
 	Write-Host "--------------------------------------------------"
 	Write-Host "-- Link Templates copied to destination folder. --"
