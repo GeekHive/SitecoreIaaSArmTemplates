@@ -6,7 +6,7 @@
       "value": "solr" 
     },
     "environmentType": {
-      "value": "shared"  
+      "value": "dev"  
     },
     "username": {
       "value": "RDPUSERNAME"
